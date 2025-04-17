@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, RotateCcw, Award } from 'lucide-react';
 
 // Sample texts for typing test
 const sampleTexts = [
@@ -9,7 +8,7 @@ const sampleTexts = [
   "The best way to predict the future is to invent it. Computer science education cannot make anybody an expert programmer any more than studying brushes and pigment can make somebody an expert painter.",
 ];
 
-function App() {
+const TypingSpeedTest = () => {
   const [currentText, setCurrentText] = useState('');
   const [userInput, setUserInput] = useState('');
   const [timer, setTimer] = useState(60);
@@ -60,7 +59,7 @@ function App() {
     }
   }, [isActive, startTime, userInput]);
   
-  // Start the test - fixed to safely check for inputRef.current
+  // Start the test
   const startTest = () => {
     setIsActive(true);
     setStartTime(Date.now());
@@ -138,7 +137,7 @@ function App() {
       let className = '';
       
       if (index < userInput.length) {
-        className = userInput[index] === char ? 'text-green-500' : 'text-red-500 bg-red-100';
+        className = userInput[index] === char ? 'text-green-500' : 'text-red-500 bg-red-50';
       }
       
       return (
@@ -150,39 +149,37 @@ function App() {
   };
   
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-6 space-y-6 border-t-4 border-purple-500 transition-all duration-300">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Typing Speed Test</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Typing <span className="text-purple-600">Speed</span> Test</h1>
           <p className="text-gray-600">Test your typing speed and accuracy</p>
         </div>
         
-        <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg shadow-sm">
           <div className="flex items-center">
-            <Clock className="w-5 h-5 text-gray-600 mr-2" />
-            <span className="text-xl font-semibold">{timer}s</span>
+            <span className="text-xl font-semibold text-purple-700">{timer}s</span>
           </div>
           
           <div className="flex items-center">
-            <span className="text-xl font-semibold">{wpm} WPM</span>
+            <span className="text-xl font-semibold text-purple-700">{wpm} WPM</span>
           </div>
           
           <div className="flex items-center">
-            <span className="text-xl font-semibold">{accuracy}% Accuracy</span>
+            <span className="text-xl font-semibold text-purple-700">{accuracy}% Accuracy</span>
           </div>
           
           <button
             onClick={resetTest}
-            className="flex items-center py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md transition duration-200"
+            className="flex items-center py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md transition duration-200"
           >
-            <RotateCcw className="w-4 h-4 mr-1" />
             Reset
           </button>
         </div>
         
         {!isFinished ? (
           <>
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-lg leading-relaxed font-mono">
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-lg leading-relaxed font-mono shadow-inner">
               {renderText()}
             </div>
             
@@ -191,7 +188,7 @@ function App() {
                 ref={inputRef}
                 value={userInput}
                 onChange={handleInputChange}
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-lg"
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none resize-none font-mono text-lg shadow-sm"
                 placeholder="Start typing here..."
                 rows={4}
                 disabled={isFinished}
@@ -202,7 +199,7 @@ function App() {
               <div className="text-center">
                 <button
                   onClick={startTest}
-                  className="py-3 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition duration-200"
+                  className="py-3 px-8 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
                 >
                   Start Test
                 </button>
@@ -210,29 +207,28 @@ function App() {
             )}
           </>
         ) : (
-          <div className="p-8 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="p-8 bg-gray-50 rounded-lg border border-gray-200 shadow-inner">
             <div className="flex items-center justify-center mb-6">
-              <Award className="w-12 h-12 text-blue-600 mr-3" />
               <h2 className="text-2xl font-bold text-gray-800">Test Results</h2>
             </div>
             
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-500">
                 <p className="text-gray-500 mb-1">Words Per Minute</p>
                 <p className="text-3xl font-bold text-gray-800">{wpm}</p>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-500">
                 <p className="text-gray-500 mb-1">Accuracy</p>
                 <p className="text-3xl font-bold text-gray-800">{accuracy}%</p>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
                 <p className="text-gray-500 mb-1">Correct Characters</p>
                 <p className="text-3xl font-bold text-green-600">{correctChars}</p>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-500">
                 <p className="text-gray-500 mb-1">Incorrect Characters</p>
                 <p className="text-3xl font-bold text-red-600">{incorrectChars}</p>
               </div>
@@ -241,7 +237,7 @@ function App() {
             <div className="text-center">
               <button
                 onClick={resetTest}
-                className="py-3 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition duration-200"
+                className="py-3 px-8 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
               >
                 Try Again
               </button>
@@ -253,4 +249,4 @@ function App() {
   );
 }
 
-export default App;
+export default TypingSpeedTest;
