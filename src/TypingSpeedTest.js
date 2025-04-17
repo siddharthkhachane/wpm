@@ -126,7 +126,7 @@ const TypingSpeedTest = () => {
     setIncorrectChars(incorrect);
     
     // Check if text is completed
-    if (value === currentText) {
+    if (value.length >= currentText.length) {
       endTest();
     }
   };
