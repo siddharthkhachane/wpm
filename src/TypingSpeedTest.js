@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, RotateCcw, Award, Keyboard, LineChart, Target } from 'lucide-react';
+import { Clock, RotateCcw, Award } from 'lucide-react';
 
 // Sample texts for typing test
 const sampleTexts = [
@@ -9,7 +9,7 @@ const sampleTexts = [
   "The best way to predict the future is to invent it. Computer science education cannot make anybody an expert programmer any more than studying brushes and pigment can make somebody an expert painter.",
 ];
 
-const TypingSpeedTest = () => {
+function App() {
   const [currentText, setCurrentText] = useState('');
   const [userInput, setUserInput] = useState('');
   const [timer, setTimer] = useState(60);
@@ -20,13 +20,9 @@ const TypingSpeedTest = () => {
   const [accuracy, setAccuracy] = useState(100);
   const [correctChars, setCorrectChars] = useState(0);
   const [incorrectChars, setIncorrectChars] = useState(0);
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [wpmHistory, setWpmHistory] = useState([]);
-  const [showIntro, setShowIntro] = useState(true);
   
   const inputRef = useRef(null);
   const intervalRef = useRef(null);
-  const wpmIntervalRef = useRef(null);
   
   // Initialize with a random text
   useEffect(() => {
@@ -38,41 +34,43 @@ const TypingSpeedTest = () => {
   useEffect(() => {
     if (isActive && timer > 0) {
       intervalRef.current = setInterval(() => {
-        setTimer((prevTimer) => prevTimer - 1);
+        setTimer((prev) => prev - 1);
       }, 1000);
     } else if (timer === 0) {
       clearInterval(intervalRef.current);
       endTest();
     }
     
-    return () => clearInterval(intervalRef.current);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [isActive, timer]);
   
-  // WPM recording for chart
+  // Calculate WPM in real-time
   useEffect(() => {
     if (isActive && startTime) {
-      wpmIntervalRef.current = setInterval(() => {
-        const timeElapsed = (Date.now() - startTime) / 60000; // in minutes
-        const wordsTyped = userInput.trim().split(/\s+/).length;
+      const timeElapsed = (Date.now() - startTime) / 60000; // in minutes
+      const wordsTyped = userInput.trim().split(/\s+/).length;
+      if (timeElapsed > 0) {
         const currentWpm = Math.round(wordsTyped / timeElapsed);
-        const validWpm = isNaN(currentWpm) ? 0 : Math.min(currentWpm, 200); // Cap at reasonable max
-        
-        setWpm(validWpm);
-        setWpmHistory(prev => [...prev, validWpm]);
-      }, 2000); // Record every 2 seconds
+        setWpm(isNaN(currentWpm) ? 0 : currentWpm);
+      }
     }
-    
-    return () => clearInterval(wpmIntervalRef.current);
   }, [isActive, startTime, userInput]);
   
-  // Start the test
+  // Start the test - fixed to safely check for inputRef.current
   const startTest = () => {
     setIsActive(true);
     setStartTime(Date.now());
     setUserInput('');
-    setWpmHistory([]);
-    setShowIntro(false);
-    inputRef.current.focus();
+    // Add a small delay to ensure the ref is available
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 0);
   };
   
   // End the test
@@ -92,8 +90,6 @@ const TypingSpeedTest = () => {
     setAccuracy(100);
     setCorrectChars(0);
     setIncorrectChars(0);
-    setWpmHistory([]);
-    setCursorPosition(0);
     const randomIndex = Math.floor(Math.random() * sampleTexts.length);
     setCurrentText(sampleTexts[randomIndex]);
   };
@@ -114,7 +110,6 @@ const TypingSpeedTest = () => {
     }
     
     setUserInput(value);
-    setCursorPosition(value.length);
     
     // Calculate correct and incorrect characters
     let correct = 0;
@@ -139,290 +134,123 @@ const TypingSpeedTest = () => {
   
   // Render colored text based on user input
   const renderText = () => {
-    return (
-      <div className="relative font-mono text-lg leading-relaxed rounded-lg p-2">
-        {currentText.split('').map((char, index) => {
-          let className = 'transition-colors duration-150';
-          
-          if (index < userInput.length) {
-            className += userInput[index] === char 
-              ? ' text-emerald-400' 
-              : ' text-red-400 bg-red-900 bg-opacity-30';
-          } else {
-            className += ' text-gray-400';
-          }
-          
-          // Add cursor effect
-          if (index === cursorPosition) {
-            className += ' border-r-2 border-cyan-400 animate-pulse';
-          }
-          
-          return (
-            <span key={index} className={className}>
-              {char}
-            </span>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Simple WPM chart
-  const renderWpmChart = () => {
-    if (wpmHistory.length < 2) return null;
-
-    const maxWpm = Math.max(...wpmHistory, 100);
-    const height = 100;
-    
-    return (
-      <div className="h-24 w-full flex items-end gap-1 mt-4">
-        {wpmHistory.map((w, i) => {
-          const barHeight = Math.max((w / maxWpm) * height, 4);
-          return (
-            <div 
-              key={i} 
-              className="bg-gradient-to-t from-cyan-600 to-cyan-400 rounded-t"
-              style={{ 
-                height: `${barHeight}%`, 
-                width: `${100 / Math.max(20, wpmHistory.length)}%`,
-                transition: 'height 0.3s ease-out' 
-              }} 
-              title={`${w} WPM`}
-            />
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Award badge based on WPM
-  const getSpeedAward = () => {
-    if (wpm < 30) return { name: "Beginner Typist", color: "text-gray-400" };
-    if (wpm < 50) return { name: "Casual Typist", color: "text-green-400" };
-    if (wpm < 70) return { name: "Efficient Typist", color: "text-blue-400" };
-    if (wpm < 90) return { name: "Professional Typist", color: "text-purple-400" };
-    return { name: "Speed Demon", color: "text-orange-400" };
-  };
-
-  // Intro screen with animation
-  const renderIntroScreen = () => {
-    return (
-      <div className="text-center space-y-8 py-8 animate-fade-in">
-        <div className="flex justify-center">
-          <div className="relative">
-            <Keyboard className="w-20 h-20 text-cyan-400" />
-            <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-              <span className="animate-ping absolute h-12 w-12 rounded-full bg-cyan-400 opacity-40"></span>
-              <span className="absolute h-6 w-6 rounded-full bg-cyan-500"></span>
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <h1 className="text-4xl font-bold mb-4 text-gradient">Typing Master</h1>
-          <p className="text-xl text-gray-400 max-w-lg mx-auto">
-            Test your typing speed and accuracy with this interactive typing challenge.
-            How fast can your fingers fly?
-          </p>
-        </div>
-        
-        <div className="flex flex-col items-center space-y-6">
-          <div className="grid grid-cols-3 gap-8 w-full max-w-lg">
-            <div className="flex flex-col items-center">
-              <Clock className="w-8 h-8 text-cyan-400 mb-2" />
-              <span className="text-gray-300">60-second challenge</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <LineChart className="w-8 h-8 text-cyan-400 mb-2" />
-              <span className="text-gray-300">Real-time WPM</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Target className="w-8 h-8 text-cyan-400 mb-2" />
-              <span className="text-gray-300">Accuracy tracking</span>
-            </div>
-          </div>
-          
-          <button
-            onClick={startTest}
-            className="group relative px-8 py-4 overflow-hidden rounded-lg bg-cyan-600 text-lg font-bold text-white shadow-cyan-900/20 shadow-lg transition-all duration-300 hover:scale-105 hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            <span className="absolute -top-10 left-0 right-0 h-40 w-full translate-y-0 transform bg-white opacity-10 transition-transform duration-1000 ease-out group-hover:translate-y-32"></span>
-            Start Typing Test
-          </button>
-        </div>
-      </div>
-    );
+    return currentText.split('').map((char, index) => {
+      let className = '';
+      
+      if (index < userInput.length) {
+        className = userInput[index] === char ? 'text-green-500' : 'text-red-500 bg-red-100';
+      }
+      
+      return (
+        <span key={index} className={className}>
+          {char}
+        </span>
+      );
+    });
   };
   
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-gray-100 p-4">
-      <div className="w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl shadow-cyan-900/20 p-6 space-y-6 border border-gray-700 relative overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-600 rounded-full opacity-10 blur-3xl"></div>
-        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-purple-600 rounded-full opacity-10 blur-3xl"></div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-6 space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Typing Speed Test</h1>
+          <p className="text-gray-600">Test your typing speed and accuracy</p>
+        </div>
         
-        {showIntro && !isActive && !isFinished ? (
-          renderIntroScreen()
-        ) : (
+        <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+          <div className="flex items-center">
+            <Clock className="w-5 h-5 text-gray-600 mr-2" />
+            <span className="text-xl font-semibold">{timer}s</span>
+          </div>
+          
+          <div className="flex items-center">
+            <span className="text-xl font-semibold">{wpm} WPM</span>
+          </div>
+          
+          <div className="flex items-center">
+            <span className="text-xl font-semibold">{accuracy}% Accuracy</span>
+          </div>
+          
+          <button
+            onClick={resetTest}
+            className="flex items-center py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md transition duration-200"
+          >
+            <RotateCcw className="w-4 h-4 mr-1" />
+            Reset
+          </button>
+        </div>
+        
+        {!isFinished ? (
           <>
-            <div className="text-center relative z-10">
-              <h1 className="text-3xl font-bold text-white mb-1">Typing Speed Test</h1>
-              <p className="text-gray-400">How fast can you type?</p>
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-lg leading-relaxed font-mono">
+              {renderText()}
             </div>
             
-            <div className="flex justify-between items-center p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-inner relative z-10">
-              <div className="flex items-center px-4 py-2 bg-gray-900 rounded-lg">
-                <Clock className="w-5 h-5 text-cyan-400 mr-2" />
-                <span className={`text-2xl font-bold ${timer <= 10 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
-                  {timer}s
-                </span>
-              </div>
-              
-              <div className="flex items-center px-4 py-2 bg-gray-900 rounded-lg">
-                <span className="text-2xl font-bold text-cyan-400">{wpm}</span>
-                <span className="ml-1 text-gray-400">WPM</span>
-              </div>
-              
-              <div className="flex items-center px-4 py-2 bg-gray-900 rounded-lg">
-                <span className={`text-2xl font-bold ${accuracy < 90 ? 'text-amber-400' : 'text-green-400'}`}>{accuracy}%</span>
-                <span className="ml-1 text-gray-400">Accuracy</span>
-              </div>
-              
-              <button
-                onClick={resetTest}
-                className="flex items-center py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md transition duration-200 shadow"
-              >
-                <RotateCcw className="w-4 h-4 mr-1 text-cyan-400" />
-                Reset
-              </button>
+            <div>
+              <textarea
+                ref={inputRef}
+                value={userInput}
+                onChange={handleInputChange}
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-lg"
+                placeholder="Start typing here..."
+                rows={4}
+                disabled={isFinished}
+              />
             </div>
             
-            {!isFinished ? (
-              <>
-                <div className="p-4 bg-gray-900 rounded-lg border border-gray-700 shadow-inner text-lg leading-relaxed font-mono relative z-10">
-                  {renderText()}
-                </div>
-                
-                <div className="relative z-10">
-                  <textarea
-                    ref={inputRef}
-                    value={userInput}
-                    onChange={handleInputChange}
-                    className="w-full p-4 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-gray-700 outline-none resize-none font-mono text-gray-300 text-lg shadow-inner"
-                    placeholder="Start typing here..."
-                    rows={4}
-                    disabled={isFinished}
-                  />
-
-                  {isActive && renderWpmChart()}
-                </div>
-                
-                {!isActive && !userInput.length && !showIntro && (
-                  <div className="text-center relative z-10">
-                    <button
-                      onClick={startTest}
-                      className="py-3 px-8 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition duration-200 shadow-lg"
-                    >
-                      Start Test
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="p-8 bg-gray-900 rounded-lg border border-gray-700 shadow-xl relative z-10">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-lg"></div>
-                
-                <div className="flex items-center justify-center mb-8 relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-20 h-20 bg-cyan-500 rounded-full opacity-10 animate-ping"></div>
-                  </div>
-                  <Award className="w-16 h-16 text-yellow-400 mr-4" />
-                  <div>
-                    <h2 className="text-3xl font-bold text-white">Test Results</h2>
-                    <p className={`text-xl font-medium ${getSpeedAward().color}`}>{getSpeedAward().name}</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-6 mb-8">
-                  <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-600/20 to-cyan-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <p className="text-gray-400 mb-1 text-sm uppercase tracking-wider">Words Per Minute</p>
-                    <p className="text-4xl font-bold text-cyan-400">{wpm}</p>
-                    <div className="absolute bottom-2 right-2 opacity-10">
-                      <LineChart className="w-12 h-12" />
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-600/20 to-green-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <p className="text-gray-400 mb-1 text-sm uppercase tracking-wider">Accuracy</p>
-                    <p className={`text-4xl font-bold ${accuracy < 90 ? 'text-amber-400' : 'text-green-400'}`}>{accuracy}%</p>
-                    <div className="absolute bottom-2 right-2 opacity-10">
-                      <Target className="w-12 h-12" />
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-600/20 to-green-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <p className="text-gray-400 mb-1 text-sm uppercase tracking-wider">Correct Characters</p>
-                    <p className="text-4xl font-bold text-green-400">{correctChars}</p>
-                    <div className="h-2 w-full bg-gray-700 rounded-full mt-2 overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 rounded-full"
-                        style={{ width: `${correctChars / (correctChars + incorrectChars) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 to-red-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <p className="text-gray-400 mb-1 text-sm uppercase tracking-wider">Incorrect Characters</p>
-                    <p className="text-4xl font-bold text-red-400">{incorrectChars}</p>
-                    <div className="h-2 w-full bg-gray-700 rounded-full mt-2 overflow-hidden">
-                      <div 
-                        className="h-full bg-red-500 rounded-full"
-                        style={{ width: `${incorrectChars / (correctChars + incorrectChars) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {renderWpmChart()}
-                
-                <div className="text-center mt-8">
-                  <button
-                    onClick={resetTest}
-                    className="group relative py-3 px-8 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 shadow-lg shadow-cyan-900/20"
-                  >
-                    <span className="absolute -top-10 left-0 right-0 h-40 w-full translate-y-0 transform bg-white opacity-10 transition-transform duration-1000 ease-out group-hover:translate-y-32"></span>
-                    Try Again
-                  </button>
-                </div>
+            {!isActive && !userInput.length && (
+              <div className="text-center">
+                <button
+                  onClick={startTest}
+                  className="py-3 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition duration-200"
+                >
+                  Start Test
+                </button>
               </div>
             )}
           </>
+        ) : (
+          <div className="p-8 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-center mb-6">
+              <Award className="w-12 h-12 text-blue-600 mr-3" />
+              <h2 className="text-2xl font-bold text-gray-800">Test Results</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-gray-500 mb-1">Words Per Minute</p>
+                <p className="text-3xl font-bold text-gray-800">{wpm}</p>
+              </div>
+              
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-gray-500 mb-1">Accuracy</p>
+                <p className="text-3xl font-bold text-gray-800">{accuracy}%</p>
+              </div>
+              
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-gray-500 mb-1">Correct Characters</p>
+                <p className="text-3xl font-bold text-green-600">{correctChars}</p>
+              </div>
+              
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-gray-500 mb-1">Incorrect Characters</p>
+                <p className="text-3xl font-bold text-red-600">{incorrectChars}</p>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <button
+                onClick={resetTest}
+                className="py-3 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition duration-200"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
         )}
-
-        {/* CSS Styles */}
-        <style jsx>{`
-          .text-gradient {
-            background: linear-gradient(to right, #4ade80, #38bdf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-          }
-
-          .animate-fade-in {
-            animation: fadeIn 0.8s ease-in-out;
-          }
-
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
       </div>
     </div>
   );
-};
+}
 
-export default TypingSpeedTest;
+export default App;
