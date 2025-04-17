@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 
 // Sample texts for typing test
 const sampleTexts = [
-  "The quick brown fox jumps over the lazy dog. This pangram contains every letter of the English alphabet at least once.",
-  "Programming is the process of creating a set of instructions that tell a computer how to perform a task. Programming can be done using a variety of computer programming languages.",
-  "A good programmer is someone who always looks both ways before crossing a one-way street. Debugging is twice as hard as writing the code in the first place.",
+  "The quick brown fox jumps over the lazy dog",
+  "Programming is the process of creating a set of instructions that tell a computer how to perform a task",
+  "A good programmer is someone who always looks both ways before crossing a one-way street",
   "The best way to predict the future is to invent it. Computer science education cannot make anybody an expert programmer any more than studying brushes and pigment can make somebody an expert painter.",
 ];
 
